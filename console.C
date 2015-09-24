@@ -75,7 +75,7 @@ void Console::scroll() {
         /* Move the current text chunk that makes up the screen
         *  back in the buffer by a line */
         unsigned temp = csr_y - 25 + 1;
-        memcpy ((char*)textmemptr, (char*)textmemptr + temp * 80, (25 - temp) * 80 * 2);
+        memcpy ((char*)textmemptr, (char*)(textmemptr + temp * 80), (25 - temp) * 80 * 2);
 
         /* Finally, we set the chunk of memory that occupies
         *  the last line of text to our 'blank' character */
