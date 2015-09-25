@@ -1,4 +1,9 @@
 #include "page_table.H"
+#include "paging_low.H"
+#include "console.H"
+//initialize statics
+PageTable     * current_page_table;
+unsigned int    paging_enabled;
 FramePool     * PageTable::kernel_mem_pool;
 FramePool     * PageTable::process_mem_pool;
 unsigned long   PageTable::shared_size;
@@ -21,15 +26,23 @@ void PageTable::init_paging(FramePool * _kernel_mem_pool,
            has been enabled.
   */
 
-  void PageTable::load(){}
+  void PageTable::load(){
+    PageTable* current_page_table = this;
+    write_cr3((unsigned long)current_page_table);
+  }
   /* Makes the given page table the current table. This must be done once during
      system startup and whenever the address space is switched (e.g. during
      process switching). */
 
-  void PageTable::enable_paging(){}
+  void PageTable::enable_paging(){
+      write_cr0(read_cr0() | 0x80000000);
+  }
   /* Enable paging on the CPU. Typically, a CPU start with paging disabled, and
      memory is accessed by addressing physical memory directly. After paging is
      enabled, memory is addressed logically. */
 
-  void PageTable::handle_fault(REGS * _r){}
+  void PageTable::handle_fault(REGS * _r){
+    Console::puts("Gotcha!\n");
+        for(;;);
+  }
   /* The page fault handler. */
