@@ -1,7 +1,15 @@
 #include "page_table.H"
+FramePool     * PageTable::kernel_mem_pool;
+FramePool     * PageTable::process_mem_pool;
+unsigned long   PageTable::shared_size;
+
 void PageTable::init_paging(FramePool * _kernel_mem_pool,
                           FramePool * _process_mem_pool,
-                          const unsigned long _shared_size){}
+                          const unsigned long _shared_size){
+ kernel_mem_pool = _kernel_mem_pool;
+ process_mem_pool = _process_mem_pool;
+ shared_size = _shared_size;
+}
   /* Set the global parameters for the paging subsystem. */
 
   PageTable::PageTable(){}
