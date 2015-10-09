@@ -48,11 +48,13 @@ private:
   static unsigned long   shared_size;        /* size of shared address space */
 
   /* DATA FOR CURRENT PAGE TABLE */
-  unsigned long        * page_directory;     /* where is page directory located? */
+  static unsigned long        * page_directory;     /* where is page directory located? */
 
 public:
   static const unsigned int PAGE_SIZE        = Machine::PAGE_SIZE; /* in bytes */
   static const unsigned int ENTRIES_PER_PAGE = Machine::PT_ENTRIES_PER_PAGE; /* in entries, duh! */
+  static const unsigned long DIR_MASK = 0xFFC00000;
+  static const unsigned long TABLE_MASK = DIR_MASK >> 10;
 
   static void init_paging(FramePool * _kernel_mem_pool,
                           FramePool * _process_mem_pool,

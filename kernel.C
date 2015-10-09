@@ -99,19 +99,19 @@ int main() {
       }
     } pagefault_handler;
 
-    ExceptionHandler::register_handler(14, &pagefault_handler);
+     ExceptionHandler::register_handler(14, &pagefault_handler);
     
-    /* ---- INITIALIZE THE PAGE TABLE -- */
+    // /* ---- INITIALIZE THE PAGE TABLE -- */
 
     PageTable::init_paging(&kernel_mem_pool,
                            &process_mem_pool,
-                           4 MB);
+                           32 MB);
 
-    PageTable pt;
+     PageTable pt;
 
-    pt.load();
+     pt.load();
 
-    PageTable::enable_paging();
+     PageTable::enable_paging();
 
     /* -- INITIALIZE THE TIMER (we use a very simple timer).-- */
     

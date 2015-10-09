@@ -40,6 +40,13 @@ class FramePool {
 
 private:
      /* -- DEFINE YOUR FRAME POOL DATA STRUCTURE(s) HERE. */
+    unsigned long base_frame_no;
+    unsigned long nframes;
+    unsigned long info_frame_no;
+    unsigned int  *bitmap;
+    static const unsigned int FRAME_SIZE = 4096;
+    static FramePool* kernel;
+    static FramePool* process;
      
 public:
   
