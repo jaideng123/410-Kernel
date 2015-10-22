@@ -89,7 +89,7 @@ void PageTable::init_paging(FramePool * _kernel_mem_pool,
       int vm_index=-1;
       for(unsigned int i=0;i<VM_ARRAY_SIZE;++i)
             if(vm_array[i]!=NULL){
-                if (vm_array[i]->is_legitimate(page_address)){
+                if (vm_array[i]->is_legitimate(address)){
                     vm_index=i;
                     break;
                     }

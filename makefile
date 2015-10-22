@@ -4,7 +4,9 @@ CPP_OPTIONS = -nostdlib -fno-builtin -nostartfiles -nodefaultlibs -fno-exception
 all: kernel.bin
 
 clean:
+	cp vm_pool.o vm_pool.o.saved
 	rm -f *.o
+	mv vm_pool.o.saved vm_pool.o
 
 start.o: start.asm gdt_low.asm idt_low.asm irq_low.asm
 	nasm -f aout -o start.o start.asm
@@ -62,15 +64,16 @@ page_table.o: page_table.C page_table.H paging_low.H
 	
 frame_pool.o: frame_pool.C frame_pool.H
 	$(CPP) $(CPP_OPTIONS) -c -o frame_pool.o frame_pool.C
+
 	
 # ==== KERNEL MAIN FILE =====
 
-kernel.o: kernel.C console.H simple_timer.H page_table.H
+kernel.o: kernel.C console.H simple_timer.H frame_pool.H page_table.H vm_pool.H
 	$(CPP) $(CPP_OPTIONS) -c -o kernel.o kernel.C
 
 
 kernel.bin: start.o utils.o kernel.o assert.o console.o gdt.o idt.o irq.o exceptions.o interrupts.o \
-   simple_timer.o paging_low.o page_table.o frame_pool.o machine.o machine_low.o
+   simple_timer.o paging_low.o page_table.o frame_pool.o machine.o machine_low.o vm_pool.o
 	ld -melf_i386 -T linker.ld -o kernel.bin start.o utils.o kernel.o assert.o console.o gdt.o idt.o \
-   exceptions.o irq.o interrupts.o simple_timer.o  paging_low.o page_table.o \
+   exceptions.o irq.o interrupts.o simple_timer.o  paging_low.o page_table.o vm_pool.o \
    frame_pool.o machine.o machine_low.o
