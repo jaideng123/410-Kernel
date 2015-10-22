@@ -1,4 +1,6 @@
 #include "frame_pool.H"
+#include "console.H"
+
 #define MB * (0x1 << 20)
 #define KB * (0x1 << 10)
 #define PROCESS_POOL_START_FRAME ((4 MB) / (4 KB))
@@ -51,8 +53,11 @@ FramePool* FramePool::process;
         break;
     }
 
-    if(val == 0xFFFF)
+    if(val == 0xFFFF){
+      Console::puts("bitmap full");
+      for(;;);
       return 0;//no open region found
+    }
 
     for (j = 0; j < 32; ++j)
     {

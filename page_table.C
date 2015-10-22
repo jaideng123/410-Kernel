@@ -35,6 +35,7 @@ void PageTable::init_paging(FramePool * _kernel_mem_pool,
     {
       page_directory[i] = 0 | 2;
     }
+    //page_directory[ENTRIES_PER_PAGE-1] = (long unsigned int)page_directory;
     paging_enabled = false;
   }
   /* Initializes a page table with a given location for the directory and the

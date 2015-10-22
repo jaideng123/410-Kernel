@@ -21,7 +21,7 @@
 #define KERNEL_POOL_START_FRAME ((2 MB) / (4 KB))
 #define KERNEL_POOL_SIZE ((2 MB) / (4 KB))
 #define PROCESS_POOL_START_FRAME ((4 MB) / (4 KB))
-#define PROCESS_POOL_SIZE ((28 MB) / (4 KB))
+#define PROCESS_POOL_SIZE ((62 MB) / (4 KB))
 /* definition of the kernel and process memory pools */
 
 #define MEM_HOLE_START_FRAME ((15 MB) / (4 KB))
