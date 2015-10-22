@@ -17,14 +17,15 @@
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
 
-/* -- (none) -- */
-
+#define VM_ARRAY_SIZE 10
 /*--------------------------------------------------------------------------*/
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
 
 #include "exceptions.H"
 #include "frame_pool.H"
+#include "console.H"
+#include "vm_pool.H"
 
 /*--------------------------------------------------------------------------*/
 /* FORWARDS */
@@ -49,6 +50,7 @@ private:
 
   /* DATA FOR CURRENT PAGE TABLE */
   static unsigned long        * page_directory;     /* where is page directory located? */
+  VMPool               * vmpool_array[VM_ARRAY_SIZE];  /*array of vmpool pointers*/
 
 public:
   static const unsigned int PAGE_SIZE        = Machine::PAGE_SIZE; /* in bytes */
@@ -82,6 +84,13 @@ public:
 
   static void handle_fault(REGS * _r);
   /* The page fault handler. */
+    void free_page(unsigned long _page_no);
+  /* Release the frame associated with the page _page_no */
+
+  void register_vmpool(VMPool *_pool);
+  /* The page table needs to know about where it gets its pages from.
+     For this, we have VMPools register with the page table. */
+
 };
 
 #endif

@@ -94,13 +94,13 @@ FramePool* FramePool::process;
       _frame_no -= kernel->base_frame_no;
       unsigned long s = _frame_no/32;
       unsigned long r = _frame_no % 32;
-       kernel->bitmap[s] &= 0 << r;
+       kernel->bitmap[s] &= ~(1 << r);
     }
     else{
       _frame_no -= process->base_frame_no;
       unsigned long s = _frame_no/32;
       unsigned long r = _frame_no % 32;
-      process->bitmap[s] &= 0 << r;
+      process->bitmap[s] &=  ~(1 << r);
     }
    }
    /* Releases frame back to the given frame pool.

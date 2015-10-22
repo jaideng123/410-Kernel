@@ -35,8 +35,11 @@ void PageTable::init_paging(FramePool * _kernel_mem_pool,
     {
       page_directory[i] = 0 | 2;
     }
+    page_directory[ENTRIES_PER_PAGE]=(unsigned long)page_directory|3;
     //page_directory[ENTRIES_PER_PAGE-1] = (long unsigned int)page_directory;
     paging_enabled = false;
+     for (unsigned int i=0;i<VM_ARRAY_SIZE;++i)
+            vmpool_array[i]=NULL;
   }
   /* Initializes a page table with a given location for the directory and the
      page table proper.
@@ -82,7 +85,17 @@ void PageTable::init_paging(FramePool * _kernel_mem_pool,
   int us = _r->err_code & 0x4;
   int reserved = _r->err_code & 0x8;
   int id = _r->err_code & 0x10;
-
+      VMPool** vm_array=current_page_table->vmpool_array;
+      int vm_index=-1;
+      for(unsigned int i=0;i<VM_ARRAY_SIZE;++i)
+            if(vm_array[i]!=NULL){
+                if (vm_array[i]->is_legitimate(page_address)){
+                    vm_index=i;
+                    break;
+                    }
+            }
+      if (vm_index<0)
+            Console::puts("INVALID ADDRESS\n");
     unsigned long* page_entry;
 
     //get the page table from the directory
@@ -110,3 +123,27 @@ void PageTable::init_paging(FramePool * _kernel_mem_pool,
     }
   }
   /* The page fault handler. */
+  void PageTable::free_page(unsigned long _page_no){
+    unsigned long directory_idex = _page_no >> 22;
+  unsigned long page_index = (_page_no >> 12) & 0x3FF;
+  unsigned long* page_table = (unsigned long*)(0xFFC00000 | (directory_idex << 12));
+    unsigned long frame_number= page_table[page_index];
+  process_mem_pool->release_frame(frame_number);
+  }
+  /* Release the frame associated with the page _page_no */
+
+  void PageTable::register_vmpool(VMPool *_pool){
+    int index=-1;
+        for (unsigned int i=0;i<VM_ARRAY_SIZE;++i) //find empty index for vmpool
+            if (vmpool_array[i]==NULL)
+                index=i;
+        if (index>=0){
+            vmpool_array[index]=_pool;//register pool
+            Console::puts("register vmpool is successful\n");//report error if you cant register
+
+        }
+        else
+            Console::puts("ERR register VMPool failed, array is full\n");//report error if you cant register
+  }
+  /* The page table needs to know about where it gets its pages from.
+     For this, we have VMPools register with the page table. */
