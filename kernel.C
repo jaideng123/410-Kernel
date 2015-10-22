@@ -151,7 +151,6 @@ int main() {
     pt1.load();
 
     PageTable::enable_paging();
-
     /* -- INITIALIZE THE TWO VIRTUAL MEMORY PAGE POOLS -- */
 
     VMPool code_pool(512 MB, 256 MB, &process_mem_pool, &pt1);
@@ -167,7 +166,6 @@ int main() {
     } pagefault_handler;
 
     ExceptionHandler::register_handler(14, &pagefault_handler);
-
     /* -- INITIALIZE THE TIMER (we use a very simple timer).-- */
     
     SimpleTimer timer(100); /* timer ticks every 10ms. */
@@ -191,7 +189,9 @@ int main() {
     Console::puts("I am starting with an extensive test of the memory allocator.\n");
     Console::puts("Please be patient...\n");
     Console::puts("Testing the memory allocation on code_pool...\n");
+    //
     GenerateMemoryReferences(&code_pool, 50, 100);
+    for(;;);
     Console::puts("Testing the memory allocation on heap_pool...\n");
     GenerateMemoryReferences(&heap_pool, 50, 100);
 

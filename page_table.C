@@ -19,8 +19,8 @@ void PageTable::init_paging(FramePool * _kernel_mem_pool,
   /* Set the global parameters for the paging subsystem. */
 
   PageTable::PageTable(){
-    page_directory = (unsigned long *) (process_mem_pool->get_frame() * PAGE_SIZE);
-    unsigned long * page_table = (unsigned long *) (process_mem_pool->get_frame() * PAGE_SIZE);
+    page_directory = (unsigned long *) (kernel_mem_pool->get_frame() * PAGE_SIZE);
+    unsigned long * page_table = (unsigned long *) (kernel_mem_pool->get_frame() * PAGE_SIZE);
     unsigned long address = 0;
 
     for (int i = 0; i < ENTRIES_PER_PAGE; ++i)
@@ -104,7 +104,7 @@ void PageTable::init_paging(FramePool * _kernel_mem_pool,
     //set up page table if none exists
     if ((page_dir[page_dir_index] & 1) == 0) {
       Console::puts("Filling page table");
-      page_tab = (unsigned long *) (process_mem_pool->get_frame() * PAGE_SIZE);
+      page_tab = (unsigned long *) (kernel_mem_pool->get_frame() * PAGE_SIZE);
       //fill up page table
       for (int i = 0; i < ENTRIES_PER_PAGE; ++i)
       {                                                  
@@ -119,7 +119,7 @@ void PageTable::init_paging(FramePool * _kernel_mem_pool,
         Console::puts("Allocated entry");
         page_entry = (unsigned long *) (process_mem_pool->get_frame() * PAGE_SIZE);                                                      
         page_tab[page_tab_index] = (unsigned long) (page_entry);
-        page_tab[page_tab_index] |= 7;
+        page_tab[page_tab_index] |= 3;
     }
   }
   /* The page fault handler. */
