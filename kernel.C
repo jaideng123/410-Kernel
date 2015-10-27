@@ -152,10 +152,15 @@ int main() {
 
     PageTable::enable_paging();
     /* -- INITIALIZE THE TWO VIRTUAL MEMORY PAGE POOLS -- */
-
+    Console::putui((unsigned long) process_mem_pool.base_frame_no);
+    Console::putui((unsigned long) process_mem_pool.info_frame_no);
     VMPool code_pool(512 MB, 256 MB, &process_mem_pool, &pt1);
+    Console::putui((unsigned long) process_mem_pool.base_frame_no);
+    Console::putui((unsigned long) process_mem_pool.info_frame_no);
     VMPool heap_pool(1 GB, 256 MB, &process_mem_pool, &pt1);
-    
+    Console::putui((unsigned long) process_mem_pool.base_frame_no);
+    Console::putui((unsigned long) process_mem_pool.info_frame_no);
+    //for(;;);
     /* ---- INSTALL PAGE FAULT HANDLER -- */
 
     class PageFault_Handler : public ExceptionHandler {
@@ -191,7 +196,6 @@ int main() {
     Console::puts("Testing the memory allocation on code_pool...\n");
     //
     GenerateMemoryReferences(&code_pool, 50, 100);
-    for(;;);
     Console::puts("Testing the memory allocation on heap_pool...\n");
     GenerateMemoryReferences(&heap_pool, 50, 100);
 
