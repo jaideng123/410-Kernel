@@ -1,12 +1,10 @@
-CPP = gcc
-CPP_OPTIONS = -nostdlib -fno-builtin -nostartfiles -nodefaultlibs -fno-exceptions -fno-rtti -fno-stack-protector -fleading-underscore -m32 -fno-asynchronous-unwind-tables
+CPP = g++
+CPP_OPTIONS = -nostdlib -fno-builtin -nostartfiles -nodefaultlibs -fno-exceptions -fno-rtti -fno-stack-protector -fleading-underscore -m32 -fno-asynchronous-unwind-tables -D_USES_SCHEDULER_ -D_TERMINATING_FUNCTIONS_
 
 all: kernel.bin
 
 clean:
-	cp vm_pool.o vm_pool.o.saved
 	rm -f *.o
-	mv vm_pool.o.saved vm_pool.o
 
 start.o: start.asm gdt_low.asm idt_low.asm irq_low.asm
 	nasm -f aout -o start.o start.asm
@@ -17,18 +15,16 @@ utils.o: utils.C utils.H
 assert.o: assert.C assert.H
 	$(CPP) $(CPP_OPTIONS) -c -o assert.o assert.C
 
-
-# ==== VARIOUS LOW-LEVEL STUFF =====
-
 gdt.o: gdt.C gdt.H
 	$(CPP) $(CPP_OPTIONS) -c -o gdt.o gdt.C
+
+# ==== MACHINE =====
 
 machine.o: machine.C machine.H
 	$(CPP) $(CPP_OPTIONS) -c -o machine.o machine.C
 
 machine_low.o: machine_low.asm machine_low.H
 	nasm -f aout -o machine_low.o machine_low.asm
-
 
 # ==== EXCEPTIONS AND INTERRUPTS =====
 
@@ -53,27 +49,33 @@ console.o: console.C console.H
 simple_timer.o: simple_timer.C simple_timer.H
 	$(CPP) $(CPP_OPTIONS) -c -o simple_timer.o simple_timer.C
 
-
 # ==== MEMORY =====
 
-paging_low.o: paging_low.asm paging_low.H
-	nasm -f aout -o paging_low.o paging_low.asm
-
-page_table.o: page_table.C page_table.H paging_low.H
-	$(CPP) $(CPP_OPTIONS) -c -o page_table.o page_table.C
-	
 frame_pool.o: frame_pool.C frame_pool.H
 	$(CPP) $(CPP_OPTIONS) -c -o frame_pool.o frame_pool.C
-
 	
+mem_pool.o: mem_pool.C mem_pool.H
+	$(CPP) $(CPP_OPTIONS) -c -o mem_pool.o mem_pool.C
+	
+# ==== THREADS =====
+
+threads_low.o: threads_low.asm threads_low.H
+	nasm -f aout -o threads_low.o threads_low.asm
+
+thread.o: thread.C thread.H threads_low.H
+	$(CPP) $(CPP_OPTIONS) -c -o thread.o thread.C
+# ==== SCHEDULER =====
+scheduler.o: scheduler.C scheduler.H thread.H machine.H
+	$(CPP) $(CPP_OPTIONS) -c -o scheduler.o scheduler.C
+
 # ==== KERNEL MAIN FILE =====
 
-kernel.o: kernel.C console.H simple_timer.H frame_pool.H page_table.H vm_pool.H
+kernel.o: kernel.C console.H gdt.H irq.H exceptions.H interrupts.H simple_timer.H frame_pool.H mem_pool.H scheduler.H
 	$(CPP) $(CPP_OPTIONS) -c -o kernel.o kernel.C
 
-
-kernel.bin: start.o utils.o kernel.o assert.o console.o gdt.o idt.o irq.o exceptions.o interrupts.o \
-   simple_timer.o paging_low.o page_table.o frame_pool.o machine.o machine_low.o vm_pool.o
-	ld -melf_i386 -T linker.ld -o kernel.bin start.o utils.o kernel.o assert.o console.o gdt.o idt.o \
-   exceptions.o irq.o interrupts.o simple_timer.o  paging_low.o page_table.o vm_pool.o \
-   frame_pool.o machine.o machine_low.o
+kernel.bin: start.o utils.o kernel.o assert.o console.o gdt.o idt.o irq.o machine.o machine_low.o exceptions.o interrupts.o \
+   simple_timer.o frame_pool.o mem_pool.o threads_low.o thread.o scheduler.o
+	ld -m elf_i386 -T linker.ld -o kernel.bin start.o utils.o kernel.o assert.o console.o gdt.o idt.o \
+   exceptions.o irq.o machine.o machine_low.o interrupts.o simple_timer.o frame_pool.o mem_pool.o threads_low.o thread.o scheduler.o
+	
+	

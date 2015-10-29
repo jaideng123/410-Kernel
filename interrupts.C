@@ -4,7 +4,7 @@
     Author: R. Bettati
             Department of Computer Science
             Texas A&M University
-    Date  : 12/09/05
+    Date  : 09/03/05
 
 */
 
@@ -38,7 +38,7 @@
    Yes, there are more efficient ways to handle exceptions, but they require more
    code replication.
 */
- 
+
 extern "C" void irq0();
 extern "C" void irq1();
 extern "C" void irq2();
@@ -124,7 +124,7 @@ void InterruptHandler::dispatch_interrupt(REGS * _r) {
     Console::puti(int_no);
     Console::puts("\n");
     Console::puts("NO DEFAULT INTERRUPT HANDLER REGISTERED\n");
-    //    abort();
+//    abort();
   }
   else {
     /* -- HANDLE THE INTERRUPT */

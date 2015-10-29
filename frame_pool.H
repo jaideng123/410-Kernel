@@ -1,13 +1,13 @@
-/*
+/* 
     File: frame_pool.H
 
     Author: R. Bettati
             Department of Computer Science
             Texas A&M University
-    Date  : 12/09/03
+    Date  : 09/03/05
 
     Description: Management of the Free-Frame Pool.
-
+    
 
 */
 
@@ -27,7 +27,7 @@
 /* -- (none) -- */
 
 /*--------------------------------------------------------------------------*/
-/* DATA STRUCTURES */
+/* DATA STRUCTURES */ 
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
@@ -38,52 +38,20 @@
 
 class FramePool {
 
-private:
-     /* -- DEFINE YOUR FRAME POOL DATA STRUCTURE(s) HERE. */
-    unsigned long buffer[8];
-    unsigned long nframes;
-    unsigned int  *bitmap;
-    static const unsigned int FRAME_SIZE = 4096;
-    static FramePool* kernel;
-    static FramePool* process;
-     
 public:
-  unsigned long base_frame_no;
-  unsigned long info_frame_no;
-   FramePool(unsigned long _base_frame_no,
-             unsigned long _nframes,
-             unsigned long _info_frame_no);
-   /* Initializes the data structures needed for the management of this
-      frame pool. This function must be called before the paging system
-      is initialized.
-      _base_frame_no is the frame number at the start of the physical memory
-      region that this frame pool manages.
-      _nframes is the number of frames in the physical memory region that this
-      frame pool manages.
-      e.g. If _base_frame_no is 16 and _nframes is 4, this frame pool manages
-      physical frames numbered 16, 17, 18 and 19
-      _info_frame_no is the frame number (within the directly mapped region) of
-      the frame that should be used to store the management information of the
-      frame pool. However, if _info_frame_no is 0, the frame pool is free to
-      choose any frame from the pool to store management information.
-      */
 
-   unsigned long get_frame();
-   /* Allocates a frame from the frame pool. If successful, returns the frame
-    * number of the frame. If fails, returns 0. */
+   FramePool();   
+   /* Initializes the data structures needed for the management of the 
+      free frame pool. This function must be called before the paging system 
+      is initialized. */ 
 
-   void mark_inaccessible(unsigned long _base_frame_no,
-                          unsigned long _nframes);
-   /* Mark the area of physical memory as inaccessible. The arguments have the
-    * same semanticas as in the constructor.
-    */
+   unsigned long get_frame(); 
+   /* Allocates a frame from the frame pool. If successful, returns the physical 
+      address of the frame. If fails, returns 0x0. */ 
 
-   static void release_frame(unsigned long _frame_no);
-   /* Releases frame back to the given frame pool.
-      The frame is identified by the frame number. 
-      NOTE: This function is static because there may be more than one frame pool
-      defined in the system, and it is unclear which one this frame belongs to.
-      This function must first identify the correct frame pool and then call the frame
-      pool's release_frame function. */
+   void release_frame(unsigned long _frame_address); 
+   /* Releases frame back to the given frame pool. 
+      The frame is identified by the physical address. */ 
+
 };
 #endif

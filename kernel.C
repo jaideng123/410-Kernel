@@ -4,64 +4,189 @@
     Author: R. Bettati
             Department of Computer Science
             Texas A&M University
-    Date  : 12/09/27
+    Date  : 11/10/25
 
 
     This file has the main entry point to the operating system.
 
-*/
+    MAIN FILE FOR MACHINE PROBLEM "KERNEL-LEVEL THREAD MANAGEMENT"
 
+    NOTE: REMEMBER THAT AT THE VERY BEGINNING WE DON'T HAVE A MEMORY MANAGER. 
+          OBJECT THEREFORE HAVE TO BE ALLOCATED ON THE STACK. 
+          THIS LEADS TO SOME RATHER CONVOLUTED CODE, WHICH WOULD BE MUCH 
+          SIMPLER OTHERWISE.
+*/
 
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
 
-#define GB * (0x1 << 30)
-#define MB * (0x1 << 20)
-#define KB * (0x1 << 10)
-#define KERNEL_POOL_START_FRAME ((2 MB) / (4 KB))
-#define KERNEL_POOL_SIZE ((2 MB) / (4 KB))
-#define PROCESS_POOL_START_FRAME ((4 MB) / (4 KB))
-#define PROCESS_POOL_SIZE ((28 MB) / (4 KB))
-/* definition of the kernel and process memory pools */
+/* -- COMMENT/UNCOMMENT THE FOLLOWING LINE TO EXCLUDE/INCLUDE SCHEDULER CODE */
 
-#define MEM_HOLE_START_FRAME ((15 MB) / (4 KB))
-#define MEM_HOLE_SIZE ((1 MB) / (4 KB))
-/* we have a 1 MB hole in physical memory starting at address 15 MB */
+//#define _USES_SCHEDULER_
+/* This macro is defined when we want to force the code below to use
+   a scheduler.
+   Otherwise, no scheduler is used, and the threads pass control to each
+   other in a co-routine fashion.
+*/
 
+
+/* -- UNCOMMENT THE FOLLOWING LINE TO MAKE THREADS TERMINATING */
+
+//#define _TERMINATING_FUNCTIONS_
+/* This macro is defined when we want the thread functions to return, and so
+   terminate their thread.
+   Otherwise, the thread functions don't return, and the threads run forever.
+*/
 
 /*--------------------------------------------------------------------------*/
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
 
-#include "machine.H"        /* LOW-LEVEL STUFF */
+#include "machine.H"         /* LOW-LEVEL STUFF   */
 #include "console.H"
 #include "gdt.H"
-#include "idt.H"            /* LOW-LEVEL EXCEPTION MGMT. */
+#include "idt.H"             /* EXCEPTION MGMT.   */
 #include "irq.H"
-#include "exceptions.H"
+#include "exceptions.H"    
 #include "interrupts.H"
 
-#include "simple_timer.H"   /* SIMPLE TIMER MANAGEMENT */
+#include "simple_timer.H"    /* TIMER MANAGEMENT  */
 
-#include "page_table.H"
-#include "paging_low.H"
+#include "frame_pool.H"      /* MEMORY MANAGEMENT */
+#include "mem_pool.H"
 
-#include "vm_pool.H"
+#include "thread.H"          /* THREAD MANAGEMENT */
 
-/*--------------------------------------------------------------------------*/
-/* MEMORY ALLOCATION */
-/*--------------------------------------------------------------------------*/
-
-void TestPassed();
-void TestFailed();
-void GenerateMemoryReferences(VMPool *pool, int size1, int size2);
+#ifdef _USES_SCHEDULER_
+#include "scheduler.H"
+#endif
 
 /*--------------------------------------------------------------------------*/
-/* MEMORY ALLOCATION */
+/* MEMORY MANAGEMENT */
 /*--------------------------------------------------------------------------*/
 
-VMPool *current_pool;
+/* -- A POOL OF FRAMES FOR THE SYSTEM TO USE */
+FramePool * SYSTEM_FRAME_POOL;
+
+/* -- A POOL OF CONTIGUOUS MEMORY FOR THE SYSTEM TO USE */
+MemPool * MEMORY_POOL;
+
+/*--------------------------------------------------------------------------*/
+/* SCHEDULER */
+/*--------------------------------------------------------------------------*/
+
+#ifdef _USES_SCHEDULER_
+
+/* -- A POINTER TO THE SYSTEM SCHEDULER */
+Scheduler * SYSTEM_SCHEDULER;
+
+#endif
+
+/*--------------------------------------------------------------------------*/
+/* JUST AN AUXILIARY FUNCTION */
+/*--------------------------------------------------------------------------*/
+
+void pass_on_CPU(Thread * _to_thread) {
+
+#ifndef _USES_SCHEDULER_
+
+        /* We don't use a scheduler. Explicitely pass control to the next
+           thread in a co-routine fashion. */
+	Thread::dispatch_to(_to_thread);
+
+#else
+
+        /* We use a scheduler. Instead of dispatching to the next thread,
+           we pre-empt the current thread by putting it onto the ready
+           queue and yielding the CPU. */
+
+        SYSTEM_SCHEDULER->resume(Thread::CurrentThread());
+        SYSTEM_SCHEDULER->yield();
+#endif
+}
+
+/*--------------------------------------------------------------------------*/
+/* A FEW THREADS (pointer to TCB's and thread functions) */
+/*--------------------------------------------------------------------------*/
+
+Thread * thread1;
+Thread * thread2;
+Thread * thread3;
+Thread * thread4;
+
+/* -- THE 4 FUNCTIONS fun1 - fun4 ARE LARGELY IDENTICAL. */
+
+void fun1() {
+    Console::puts("Thread: "); Console::puti(Thread::CurrentThread()->ThreadId()); Console::puts("\n");
+    Console::puts("FUN 1 INVOKED!\n");
+
+#ifdef _TERMINATING_FUNCTIONS_
+    for(int j = 0; j < 10; j++) 
+#else
+    for(int j = 0;; j++) 
+#endif
+    {	
+        Console::puts("FUN 1 IN BURST["); Console::puti(j); Console::puts("]\n");
+        for (int i = 0; i < 10; i++) {
+            Console::puts("FUN 1: TICK ["); Console::puti(i); Console::puts("]\n");
+        }
+        pass_on_CPU(thread2);
+    }
+    return;
+}
+
+
+void fun2() {
+    Console::puts("Thread: "); Console::puti(Thread::CurrentThread()->ThreadId()); Console::puts("\n");
+    Console::puts("FUN 2 INVOKED!\n");
+
+#ifdef _TERMINATING_FUNCTIONS_
+    for(int j = 0; j < 10; j++) 
+#else
+    for(int j = 0;; j++) 
+#endif  
+    {		
+        Console::puts("FUN 2 IN BURST["); Console::puti(j); Console::puts("]\n");
+        for (int i = 0; i < 10; i++) {
+            Console::puts("FUN 2: TICK ["); Console::puti(i); Console::puts("]\n");
+        }
+        pass_on_CPU(thread3);
+    }
+    return;
+}
+
+void fun3() {
+    Console::puts("Thread: "); Console::puti(Thread::CurrentThread()->ThreadId()); Console::puts("\n");
+    Console::puts("FUN 3 INVOKED!\n");
+
+    for(int j = 0;; j++) {
+        Console::puts("FUN 3 IN BURST["); Console::puti(j); Console::puts("]\n");
+        for (int i = 0; i < 10; i++) {
+	    Console::puts("FUN 3: TICK ["); Console::puti(i); Console::puts("]\n");
+        }
+        pass_on_CPU(thread4);
+    }
+    return;
+}
+
+void fun4() {
+    Console::puts("Thread: "); Console::puti(Thread::CurrentThread()->ThreadId()); Console::puts("\n");
+    Console::puts("FUN 4 INVOKED!\n");
+
+    for(int j = 0;; j++) {
+        Console::puts("FUN 4 IN BURST["); Console::puti(j); Console::puts("]\n");
+        for (int i = 0; i < 10; i++) {
+	    Console::puts("FUN 4: TICK ["); Console::puti(i); Console::puts("]\n");
+        }
+        pass_on_CPU(thread1);
+    }
+    return;
+}
+
+/*--------------------------------------------------------------------------*/
+/* MEMORY MANAGEMENT */
+/*--------------------------------------------------------------------------*/
 
 #ifdef MSDOS
 typedef unsigned long size_t;
@@ -71,37 +196,25 @@ typedef unsigned int size_t;
 
 //replace the operator "new"
 void * operator new (size_t size) {
-  unsigned long a = current_pool->allocate((unsigned long)size);
-  return (void *)a;
+    unsigned long a = MEMORY_POOL->allocate((unsigned long)size);
+    return (void *)a;
 }
 
 //replace the operator "new[]"
 void * operator new[] (size_t size) {
-  unsigned long a = current_pool->allocate((unsigned long)size);
-  return (void *)a;
+    unsigned long a = MEMORY_POOL->allocate((unsigned long)size);
+    return (void *)a;
 }
 
 //replace the operator "delete"
 void operator delete (void * p) {
-  current_pool->release((unsigned long)p);
+    MEMORY_POOL->release((unsigned long)p);
 }
 
 //replace the operator "delete[]"
 void operator delete[] (void * p) {
-  current_pool->release((unsigned long)p);
+    MEMORY_POOL->release((unsigned long)p);
 }
-
-/*--------------------------------------------------------------------------*/
-/* EXCEPTION HANDLERS */
-/*--------------------------------------------------------------------------*/
-
-/* -- EXAMPLE OF THE DIVISION-BY-ZERO HANDLER */
-
-void dbz_handler(REGS * r) {
-  Console::puts("DIVISION BY ZERO\n");
-  for(;;);
-}
-
 
 /*--------------------------------------------------------------------------*/
 /* MAIN ENTRY INTO THE OS */
@@ -109,13 +222,12 @@ void dbz_handler(REGS * r) {
 
 int main() {
 
-   GDT::init();
+    GDT::init();
     Console::init();
     IDT::init();
     ExceptionHandler::init_dispatcher();
     IRQ::init();
     InterruptHandler::init_dispatcher();
-
 
     /* -- EXAMPLE OF AN EXCEPTION HANDLER -- */
 
@@ -129,57 +241,43 @@ int main() {
 
     ExceptionHandler::register_handler(0, &dbz_handler);
 
-    /* -- INITIALIZE FRAME POOLS -- */
 
-    FramePool kernel_mem_pool(KERNEL_POOL_START_FRAME,
-                              KERNEL_POOL_SIZE,
-                              0);
-    unsigned long process_mem_pool_info_frame = kernel_mem_pool.get_frame();
-    FramePool process_mem_pool(PROCESS_POOL_START_FRAME,
-                               PROCESS_POOL_SIZE,
-                               process_mem_pool_info_frame);
-    process_mem_pool.mark_inaccessible(MEM_HOLE_START_FRAME, MEM_HOLE_SIZE);
+    /* -- INITIALIZE MEMORY -- */
+    /*    NOTE: We don't have paging enabled in this MP. */
+    /*    NOTE2: This is not an exercise in memory management. The implementation
+                of the memory management is accordingly *very* primitive! */
 
-    /* -- INITIALIZE MEMORY (PAGING) -- */
+    /* ---- Initialize a frame pool; details are in its implementation */
+    FramePool system_frame_pool;
+    SYSTEM_FRAME_POOL = &system_frame_pool;
+   
+    /* ---- Create a memory pool of 256 frames. */
+    MemPool memory_pool(SYSTEM_FRAME_POOL, 256);
+    MEMORY_POOL = &memory_pool;
 
-    PageTable::init_paging(&kernel_mem_pool,
-                           &process_mem_pool,
-                           4 MB);
-
-    PageTable pt1;
-
-    pt1.load();
-
-    PageTable::enable_paging();
-    /* -- INITIALIZE THE TWO VIRTUAL MEMORY PAGE POOLS -- */
-    Console::putui((unsigned long) process_mem_pool.base_frame_no);
-    Console::putui((unsigned long) process_mem_pool.info_frame_no);
-    VMPool code_pool(512 MB, 256 MB, &process_mem_pool, &pt1);
-    Console::putui((unsigned long) process_mem_pool.base_frame_no);
-    Console::putui((unsigned long) process_mem_pool.info_frame_no);
-    VMPool heap_pool(1 GB, 256 MB, &process_mem_pool, &pt1);
-    Console::putui((unsigned long) process_mem_pool.base_frame_no);
-    Console::putui((unsigned long) process_mem_pool.info_frame_no);
-    //for(;;);
-    /* ---- INSTALL PAGE FAULT HANDLER -- */
-
-    class PageFault_Handler : public ExceptionHandler {
-      public:
-      virtual void handle_exception(REGS * _regs) {
-        PageTable::handle_fault(_regs);
-      }
-    } pagefault_handler;
-
-    ExceptionHandler::register_handler(14, &pagefault_handler);
     /* -- INITIALIZE THE TIMER (we use a very simple timer).-- */
-    
+
+    /* Question: Why do we want a timer? We have it to make sure that 
+                 we enable interrupts correctly. If we forget to do it,
+                 the timer "dies". */
+
     SimpleTimer timer(100); /* timer ticks every 10ms. */
     InterruptHandler::register_handler(0, &timer);
+    /* The Timer is implemented as an interrupt handler. */
+
+#ifdef _USES_SCHEDULER_
+
+    /* -- SCHEDULER -- IF YOU HAVE ONE -- */
+ 
+    Scheduler system_scheduler = Scheduler();
+    SYSTEM_SCHEDULER = &system_scheduler;
+
+#endif
 
     /* NOTE: The timer chip starts periodically firing as
              soon as we enable interrupts.
              It is important to install a timer handler, as we
-             would get a lot of uncaptured interrupts otherwise. */
+             would get a lot of uncaptured interrupts otherwise. */ 
 
     /* -- ENABLE INTERRUPTS -- */
 
@@ -189,47 +287,47 @@ int main() {
 
     Console::puts("Hello World!\n");
 
-    /* -- GENERATE MEMORY REFERENCES */
+    /* -- LET'S CREATE SOME THREADS... */
 
-    Console::puts("I am starting with an extensive test of the memory allocator.\n");
-    Console::puts("Please be patient...\n");
-    Console::puts("Testing the memory allocation on code_pool...\n");
-    //
-    GenerateMemoryReferences(&code_pool, 50, 100);
-    Console::puts("Testing the memory allocation on heap_pool...\n");
-    GenerateMemoryReferences(&heap_pool, 50, 100);
+    Console::puts("CREATING THREAD 1...\n");
+    char * stack1 = new char[1024];
+    thread1 = new Thread(fun1, stack1, 1024);
+    Console::puts("DONE\n");
 
-   TestPassed();
-}
+    Console::puts("CREATING THREAD 2...");
+    char * stack2 = new char[1024];
+    thread2 = new Thread(fun2, stack2, 1024);
+    Console::puts("DONE\n");
 
-void GenerateMemoryReferences(VMPool *pool, int size1, int size2)
-{
-   current_pool = pool;
-   for(int i=1; i<size1; i++) {
-      int *arr = new int[size2 * i];
-      if(pool->is_legitimate((unsigned long)arr) == FALSE) {
-         TestFailed();
-      }
-      for(int j=0; j<size2*i; j++) {
-         arr[j] = j;
-      }
-      for(int j=size2*i - 1; j>=0; j--) {
-         if(arr[j] != j) {
-            TestFailed();
-         }
-      }
-      delete arr;
-   }
-}
+    Console::puts("CREATING THREAD 3...");
+    char * stack3 = new char[1024];
+    thread3 = new Thread(fun3, stack3, 1024);
+    Console::puts("DONE\n");
 
-void TestFailed()
-{
-   Console::puts("Test Failed\n");
-   for(;;);
-}
+    Console::puts("CREATING THREAD 4...");
+    char * stack4 = new char[1024];
+    thread4 = new Thread(fun4, stack4, 1024);
+    Console::puts("DONE\n");
 
-void TestPassed()
-{
-   Console::puts("Test Passed! Congratulations!\n");
-   for(;;);
+#ifdef _USES_SCHEDULER_
+
+    /* WE ADD thread2 - thread4 TO THE READY QUEUE OF THE SCHEDULER. */
+
+    SYSTEM_SCHEDULER->add(thread2);
+    SYSTEM_SCHEDULER->add(thread3);
+    SYSTEM_SCHEDULER->add(thread4);
+
+#endif
+
+    /* -- KICK-OFF THREAD1 ... */
+
+    Console::puts("STARTING THREAD 1 ...\n");
+    Thread::dispatch_to(thread1);
+
+    /* -- AND ALL THE REST SHOULD FOLLOW ... */
+
+    assert(FALSE); /* WE SHOULD NEVER REACH THIS POINT. */
+
+    /* -- WE DO THE FOLLOWING TO KEEP THE COMPILER HAPPY. */
+    return 1;
 }

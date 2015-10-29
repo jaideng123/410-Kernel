@@ -1,111 +1,63 @@
-#include "frame_pool.H"
+/* 
+    File: frame_pool.C
+
+    Author: R. Bettati
+            Department of Computer Science
+            Texas A&M University
+    Date  : 09/05/13
+
+    Implementation of the manager for the Free-Frame Pool.
+
+    THIS IS A DUMMY IMPLEMENTATION ONLY! 
+    IT HAS BEEN IMPLEMENTED AS POORLY AS HUMANLY POSSIBLE.
+    DO NOT TRY TO USE OR IMITATE IN ANY WAY!!
+
+    NOTE: THIS IMPLEMENTATION SUPPORTS THE CREATION OF ONLY ONE FRAME POOL!!
+
+*/
+
+/*--------------------------------------------------------------------------*/
+/* INCLUDES */
+/*--------------------------------------------------------------------------*/
+
+#include "utils.H"
+#include "machine.H"
 #include "console.H"
 
-#define MB * (0x1 << 20)
-#define KB * (0x1 << 10)
-#define PROCESS_POOL_START_FRAME ((4 MB) / (4 KB))
-FramePool* FramePool::kernel;
-FramePool* FramePool::process;
-    FramePool::FramePool(unsigned long _base_frame_no,
-             unsigned long _nframes,
-             unsigned long _info_frame_no){
-      base_frame_no = _base_frame_no;
-      nframes = _nframes;
-      info_frame_no = _info_frame_no;
-      if(_info_frame_no == 0){
-        info_frame_no = base_frame_no;
-        kernel = this;
-      }
-      else{
-        process = this;
-      }
-      bitmap = (unsigned int *) (info_frame_no * FRAME_SIZE);
-      for (int i = 0; i < 512; ++i){
-        bitmap[i] = 0;
-      }
-      mark_inaccessible(info_frame_no, 1);
+#include "frame_pool.H"
 
-    }
-   /* Initializes the data structures needed for the management of this
-      frame pool. This function must be called before the paging system
-      is initialized.
-      _base_frame_no is the frame number at the start of the physical memory
-      region that this frame pool manages.
-      _nframes is the number of frames in the physical memory region that this
-      frame pool manages.
-      e.g. If _base_frame_no is 16 and _nframes is 4, this frame pool manages
-      physical frames numbered 16, 17, 18 and 19
-      _info_frame_no is the frame number (within the directly mapped region) of
-      the frame that should be used to store the management information of the
-      frame pool. However, if _info_frame_no is 0, the frame pool is free to
-      choose any frame from the pool to store management information.
-      */
+/*--------------------------------------------------------------------------*/
+/* LOCAL VARIABLES */
+/*--------------------------------------------------------------------------*/
 
-   unsigned long FramePool::get_frame(){
-    unsigned int val;
-    int i;
-    int j;
-    //search for region of bitmap with open spot
-    for (i = 0; i < 512; ++i)
-    {
-      val = bitmap[i];
-      if(val != 0xFFFF)
-        break;
-    }
+static unsigned long next_free_frame;
 
-    if(val == 0xFFFF){
-      Console::puts("bitmap full");
-      for(;;);
-      return 0;//no open region found
-    }
+/*--------------------------------------------------------------------------*/
+/* F r a m e   P o o l  */
+/*--------------------------------------------------------------------------*/
 
-    for (j = 0; j < 32; ++j)
-    {
-      unsigned int temp  = val & (1 << j);
-      if(temp == 0){
-        //found an open frame!
-        unsigned long frame = i*32 + j + base_frame_no;
-        mark_inaccessible(frame,1);
-        return frame;
-      }
-    }
+FramePool::FramePool() {
+  next_free_frame = 0x200000; /* 2 MB */
+}     
 
-   }
-   /* Allocates a frame from the frame pool. If successful, returns the frame
-    * number of the frame. If fails, returns 0. */
 
-   void FramePool::mark_inaccessible(unsigned long _base_frame_no,
-                          unsigned long _nframes){
-      _base_frame_no -= base_frame_no;
-      for (int i = 0; i < _nframes; ++i)
-      {
-        unsigned long j = _base_frame_no + i;
-        unsigned long s = j/32;
-        unsigned long r = _base_frame_no % 32;
-        bitmap[s] |= 1 << r;
-      }
-   }
-   /* Mark the area of physical memory as inaccessible. The arguments have the
-    * same semanticas as in the constructor.
-    */
+unsigned long FramePool::get_frame() {
+/* Allocates a frame from the frame pool. If successful, returns the physical 
+   address of the frame. If fails, returns 0x0. */ 
 
-   void FramePool::release_frame(unsigned long _frame_no){
-    if (_frame_no < PROCESS_POOL_START_FRAME ){
-      _frame_no -= kernel->base_frame_no;
-      unsigned long s = _frame_no/32;
-      unsigned long r = _frame_no % 32;
-       kernel->bitmap[s] &= ~(1 << r);
-    }
-    else{
-      _frame_no -= process->base_frame_no;
-      unsigned long s = _frame_no/32;
-      unsigned long r = _frame_no % 32;
-      process->bitmap[s] &=  ~(1 << r);
-    }
-   }
-   /* Releases frame back to the given frame pool.
-      The frame is identified by the frame number. 
-      NOTE: This function is static because there may be more than one frame pool
-      defined in the system, and it is unclear which one this frame belongs to.
-      This function must first identify the correct frame pool and then call the frame
-      pool's release_frame function. */
+//  Console::puts("FramePool:next_free_frame = "); Console::putui(next_free_frame); Console::puts("\n");
+  unsigned long new_frame = next_free_frame;
+
+  next_free_frame += Machine::PAGE_SIZE;
+
+  return new_frame;
+
+}
+ 
+
+void FramePool::release_frame(unsigned long   _frame_address) {
+/* Releases frame back to the given frame pool. 
+   The frame is identified by the physical address. */ 
+
+   /* FOR NOW WE DON'T RELEASE FRAMES. */
+}

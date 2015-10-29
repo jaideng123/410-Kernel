@@ -8,16 +8,6 @@
 
     Description: High-level interrupt handling. 
 
-    CPU exceptions are caught by low-level exception and interrupt 
-    handler stubs, which all eventually cause the high-level
-    exception dispatcher to be called (see 'dispatch_exception() below).
-
-    The dispatcher then looks up the appropriate exception handler 
-    for the given exception, and calls it. 
-    Specific exception handlers are installed by registering an exception handler
-    object of a class appropriately derived from class 'ExceptionHandler'. The 
-    functionality of the exception handler is then implemented in function
-    'handle_exception(REGS * _regs)'.
 */
 
 #ifndef _interrupts_H_                   // include file only once
